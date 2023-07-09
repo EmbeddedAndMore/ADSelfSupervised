@@ -1,0 +1,4 @@
+venv/
+Data/
+__pycache__/
+ogdirs/
