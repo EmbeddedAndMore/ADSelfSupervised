@@ -41,10 +41,10 @@ class MVTecAD(Dataset):
         if self.mode == "train":
             self.image_names = list((self.root_dir / defect_name / "train" / "good").glob("*.png"))
             print("loading images for train")
-            with ProcessPoolExecutor(10) as executor:
-                executor.map(_preprocess_img, [(file, size) for file in self.image_names])
+            # with ProcessPoolExecutor(10) as executor:
+            #     self.imgs = executor.map(_preprocess_img, [(file, size) for file in self.image_names])
 
-            # self.imgs = Parallel(n_jobs=10)(delayed(lambda file: Image.open(file).resize((size,size)).convert("RGB"))(file) for file in self.image_names)
+            self.imgs = Parallel(n_jobs=10)(delayed(lambda file: Image.open(file).resize((size,size)).convert("RGB"))(file) for file in self.image_names)
             # print(f"loaded {len(self.imgs)} images")
         else:
             #test mode
