@@ -2,3 +2,5 @@ venv/
 Data/
 __pycache__/
 logdirs/
+models/
+models.zip
