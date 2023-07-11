@@ -8,7 +8,7 @@ from model import ADModel
 import matplotlib.pyplot as plt
 import argparse
 from pathlib import Path
-from cutpaste import CutPasteBase, merge_cut_paste
+from ssl_aug_methods import SSLBase, merge_cut_paste
 from sklearn.utils import shuffle
 from sklearn.model_selection import GridSearchCV
 import numpy as np
@@ -16,6 +16,7 @@ from collections import defaultdict
 from density import GaussianDensitySklearn, GaussianDensityTorch
 import pandas as pd
 from utils import to_bool
+from matplotlib.colors import ListedColormap
 
 test_data_eval = None
 test_transform = None
@@ -107,7 +108,7 @@ def evaluate_model(modelname, defect_type, device="cpu", save_plots=False, size=
                                                                             std=[0.229, 0.224, 0.225]))
 
             train_transform = transforms.Compose([])
-            train_transform.transforms.append(CutPasteBase(transform=after_cutpaste_transform))
+            train_transform.transforms.append(SSLBase(transform=after_cutpaste_transform))
 
             train_data = MVTecAD("Data", defect_type, transform=train_transform, size=size)
             dataloader_train = DataLoader(train_data, batch_size=32,
@@ -139,7 +140,7 @@ def evaluate_model(modelname, defect_type, device="cpu", save_plots=False, size=
         else:
             tsne_labels = labels
             tsne_embeds = embeds
-        plot_tsne(tsne_labels, tsne_embeds, eval_dir / "tsne.png")
+        plot_tsne(tsne_labels, tsne_embeds, eval_dir / "tsne.png", defect_type)
     else:
         eval_dir = Path("unused")
     
@@ -148,20 +149,21 @@ def evaluate_model(modelname, defect_type, device="cpu", save_plots=False, size=
     distances = density.predict(embeds)
     #TODO: set threshold on mahalanobis distances and use "real" probabilities
 
-    roc_auc = plot_roc(labels, distances, eval_dir / "roc_plot.png", modelname=modelname, save_plots=save_plots)
+    roc_auc = plot_roc(labels, distances, eval_dir / "roc_plot.png", defect_type, modelname=modelname, save_plots=save_plots)
     
 
     return roc_auc
 
 
 
-def plot_roc(labels, scores, filename, modelname="", save_plots=False):
+def plot_roc(labels, scores, filename,defect_type, modelname="", save_plots=False):
     fpr, tpr, _ = roc_curve(labels, scores)
     roc_auc = auc(fpr, tpr)
 
     #plot roc
     if save_plots:
         plt.figure()
+        
         lw = 2
         plt.plot(fpr, tpr, color='darkorange',
                 lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
@@ -170,23 +172,34 @@ def plot_roc(labels, scores, filename, modelname="", save_plots=False):
         plt.ylim([0.0, 1.05])
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
-        plt.title(f'Receiver operating characteristic {modelname}')
+        plt.title(f'Resnet - {defect_type}')
         plt.legend(loc="lower right")
         # plt.show()
-        plt.savefig(filename)
+        plt.savefig(filename,dpi=300)
         plt.close()
 
     return roc_auc
 
-def plot_tsne(labels, embeds, filename):
+def plot_tsne(labels, embeds, filename,defect_type):
     tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=500)
     embeds, labels = shuffle(embeds, labels)
     tsne_results = tsne.fit_transform(embeds)
     fig, ax = plt.subplots(1)
-    colormap = ["b", "r", "c", "y"]
+    ax.set_title(f"t-SNE: {defect_type}")
+    
+    colormap = ListedColormap(["b", "r", "c", "y"])
+    labels = labels.cpu().detach().numpy()
+    legends = ["True" if l else "False" for l in labels ]
+    print("labels: ", labels)
+    print("legends: ", legends)
 
-    ax.scatter(tsne_results[:,0], tsne_results[:,1], color=[colormap[l] for l in labels])
-    fig.savefig(filename)
+    scatter = ax.scatter(tsne_results[:,0], tsne_results[:,1], c=labels, cmap=colormap)
+    handles, _ = scatter.legend_elements()
+    legend1= ax.legend(handles, legends,loc="upper left", title="Is Defected")
+    ax.add_artist(legend1)
+    ax.legend()
+
+    fig.savefig(filename,dpi=300)
     plt.close()
 
 if __name__ == '__main__':

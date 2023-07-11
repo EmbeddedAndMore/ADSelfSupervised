@@ -9,7 +9,7 @@ def merge_cut_paste(batch):
     return [torch.stack(imgs) for imgs in img_types]
     
 
-class CutPasteBase(object):
+class SSLBase(object):
     """Base class cutpaste variants with common operations"""
     def __init__(self, colorJitter=0.1, transform=None):
         self.transform = transform
@@ -29,14 +29,14 @@ class CutPasteBase(object):
         return org_img, img
 
 
-class NormalCutPaste(CutPasteBase):
+class NormalSSL(SSLBase):
     """Randomly cut a patche from an image and paste it somewere else.
     Args:
         area_ratio (list): list with 2 floats for maximum and minimum area to cut out
         aspect_ratio (float): minimum area ration. Ration is sampled between aspect_ratio and 1/aspect_ratio.
     """
     def __init__(self, area_ratio=[0.02,0.15], aspect_ratio=0.3, **kwags):
-        super(NormalCutPaste, self).__init__(**kwags)
+        super(NormalSSL, self).__init__(**kwags)
         self.area_ratio = area_ratio
         self.aspect_ratio = aspect_ratio
 
@@ -44,6 +44,8 @@ class NormalCutPaste(CutPasteBase):
         #TODO: we might want to use the pytorch implementation to calculate the patches from https://pytorch.org/vision/stable/_modules/torchvision/transforms/transforms.html#RandomErasing
         h = img.size[0]
         w = img.size[1]
+
+        print("in notmal ss1: ", type(img), img.size)
         
         # ratio between area_ratio[0] and area_ratio[1]
         ratio_area = random.uniform(self.area_ratio[0], self.area_ratio[1]) * w * h
@@ -77,7 +79,7 @@ class NormalCutPaste(CutPasteBase):
         return super().__call__(img, augmented)
 
 
-class ScarCutPaste(CutPasteBase):
+class ScarSSL(SSLBase):
     """Randomly cut a patche from an image and paste it somewere else.
     Args:
         width (list): width to sample from. List of [min, max]
@@ -85,7 +87,7 @@ class ScarCutPaste(CutPasteBase):
         rotation (list): rotation to sample from. List of [min, max]
     """
     def __init__(self, width=[2,16], height=[10,25], rotation=[-45,45], **kwags):
-        super(ScarCutPaste, self).__init__(**kwags)
+        super(ScarSSL, self).__init__(**kwags)
         self.width = width
         self.height = height
         self.rotation = rotation
@@ -123,10 +125,10 @@ class ScarCutPaste(CutPasteBase):
         
         return super().__call__(img, augmented)
 
-class TogetherCutPaste(object):
+class TogetherSSL(object):
     def __init__(self, **kwags):
-        self.normal = NormalCutPaste(**kwags)
-        self.scar = ScarCutPaste(**kwags)
+        self.normal = NormalSSL(**kwags)
+        self.scar = ScarSSL(**kwags)
     
     def __call__(self, img):
         r = random.uniform(0, 1)
@@ -136,10 +138,10 @@ class TogetherCutPaste(object):
             return self.scar(img)
 
     
-class CutPaste3Way(object):
+class SSL3Way(object):
     def __init__(self, **kwags):
-        self.normal = NormalCutPaste(**kwags)
-        self.scar = ScarCutPaste(**kwags)
+        self.normal = NormalSSL(**kwags)
+        self.scar = ScarSSL(**kwags)
     
     def __call__(self, img):
         org, cutpaste_normal = self.normal(img)

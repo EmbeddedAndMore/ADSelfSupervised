@@ -12,7 +12,7 @@ from torchvision import transforms
 
 
 from dataset import MVTecAD, Repeat
-from cutpaste import NormalCutPaste,ScarCutPaste, CutPaste3Way, TogetherCutPaste, merge_cut_paste
+from ssl_aug_methods import NormalSSL,ScarSSL, SSL3Way, TogetherSSL, merge_cut_paste
 from model import ADModel
 from evaluation import evaluate_model
 from utils import to_bool
@@ -28,7 +28,7 @@ def train(data_type="screw",
                  optim_name="SGD",
                  batch_size=64,
                  head_layer=8,
-                 cutpate_type=NormalCutPaste,
+                 cutpate_type=NormalSSL,
                  device = "cuda",
                  workers=8,
                  size = 256):
@@ -63,7 +63,7 @@ def train(data_type="screw",
 
     # create Model:
     head_layers = [512]*head_layer+[128]
-    num_classes = 2 if cutpate_type is not CutPaste3Way else 3
+    num_classes = 2 if cutpate_type is not SSL3Way else 3
     model = ADModel(pretrained=pretrained, head_layers=head_layers, num_classes=num_classes)
     model.to(device)
 
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     else:
         types = args.type.split(",")
     
-    variant_map = {'normal':NormalCutPaste, 'scar':ScarCutPaste, '3way':CutPaste3Way, 'union':TogetherCutPaste}
+    variant_map = {'normal':NormalSSL, 'scar':ScarSSL, '3way':SSL3Way, 'union':TogetherSSL}
     variant = variant_map[args.variant]
     
     device = "cuda" if args.cuda else "cpu"

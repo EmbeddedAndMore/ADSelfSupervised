@@ -1,7 +1,9 @@
 torch
 torchvision
-sklearn
 pandas
 seaborn
 tqdm
 tensorboard
+imagesize
+scikit-learn
+joblib
