@@ -8,3 +8,5 @@ eval-efficientnetv2s.zip
 eval-resnet.zip
 models-efficientnetv2s.zip
 models_resnet18.zip
+grad_cam/
+xgrad_cam/
